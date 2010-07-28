@@ -245,10 +245,7 @@
   (:default "libfann"))
 
 (cl:defun load-fann ()
-  (use-foreign-library libfann))
-
-(cl:eval-when (:compile-toplevel :execute)
-  (load-fann))
+  (cffi:use-foreign-library libfann))
 
 (cl:defun close-fann ()
   (close-foreign-library 'libfann))

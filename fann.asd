@@ -8,9 +8,11 @@
   :author "Mason Smith <masonium@gmail.com>"
   :maintainer "Mason Smith <masonium@gmail.com>"
   :license "WTFPL"
-  :depends-on (:cffi :trivial-garbage)
+  :depends-on (:cffi :trivial-garbage :alexandria)
   :components
   ((:file "fann-internal")
    (:file "package")
-   (:file "fann"))
+   (:file "util")
+   (:file "fann")
+   (:file "train"))
   :serial t)
