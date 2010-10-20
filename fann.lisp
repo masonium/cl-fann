@@ -21,8 +21,7 @@
 			    :num-inputs (fann-get-num-input pointer)
 			    :num-outputs (fann-get-num-output pointer))))
     (tg:finalize nn
-		 #'(lambda (obj) 
-		     (fannint:fann-destroy (slot-value obj 'raw-pointer))))
+		 #'(lambda () (fannint:fann-destroy pointer)))
     nn))
 
 (defun sequence->foreign-array (seq type)
@@ -64,9 +63,9 @@
   "Run the neural network NN on a sequence INPUT."
   (with-sequence-as-foreign-array (input-array input 'fann-internal:fann-type)
     (let ((output (fann-internal:fann-run (slot-value nn 'raw-pointer) input-array)))
-      (prog1 (loop for i from 0 to (1- (slot-value nn 'num-outputs))
-		collecting (cffi:mem-aref output 'fann-internal:fann-type i))
-	(cffi:foreign-free output)))))
+      (loop for i from 0 to (1- (slot-value nn 'num-outputs))
+	 collecting (cffi:mem-aref output 'fann-internal:fann-type i)))))
+
 
 (defmacro define-nn-accessor (name)
   (let ((internal-get (intern (format nil "FANN-GET-~A" name)))
@@ -75,9 +74,9 @@
     (with-gensyms (nn-var rest value)
       `(progn 
 	 (defun ,name (,nn-var &rest ,rest)
-	   (apply (function ,internal-get) (%nn-pointer ,nn-var) ,rest))
+	   (apply (function ,internal-get) (%pointer ,nn-var) ,rest))
 	 (defun ,generated-set (,nn-var ,value &rest ,rest)
-	   (apply (function ,internal-set) (%nn-pointer ,nn-var) ,value ,rest)
+	   (apply (function ,internal-set) (%pointer ,nn-var) ,value ,rest)
 	   ,value)
 	 (defsetf ,name ,generated-set)))))
 
@@ -94,11 +93,7 @@
 (define-nn-accessor rprop-delta-min) 
 (define-nn-accessor rprop-delta-max)
 
-;(define-nn-read-only-accessor total-connections fann-get-total-connections)
-					;(define-nn-accessor connection-rate fann-get-connection-rate)
-					;(define-nn-accessor num-layers fann-get-num-layers)
-
-(defun %nn-pointer (nn)
+(defun %pointer (nn)
   (slot-value nn 'raw-pointer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,13 +110,15 @@
   "Save the neural network NN to a file specified by PATHNAME."
   (cffi:with-foreign-string (config-filename (namestring pathname))
     (if fixed-point
-	(let ((rv (fann-save-to-fixed (%nn-pointer nn) config-filename)))
+	(let ((rv (fann-save-to-fixed (%pointer nn) config-filename)))
 	  (when (< rv 0)
 	    (error 'neural-network-error 
 		   :message "Could not save as fixed point"))
 	  rv)
-	(fann-save (%nn-pointer nn) config-filename))))
+	(fann-save (%pointer nn) config-filename))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Training
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun randomize-weights (nn min-weight max-weight)
+  (fann-randomize-weights (%pointer nn) min-weight max-weight))

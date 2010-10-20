@@ -236,13 +236,14 @@
            "E-CANT-OPEN-CONFIG-R"
            "E-NO-ERROR"
            "FANN-ERRNO-ENUM"
-           "FANN-TYPE"))
+           "FANN-TYPE"
+	   "LOAD-FANN"))
 
 (cl:in-package :fann-internal)
 
 (define-foreign-library libfann
-  (:unix "libfann.so")
-  (:default "libfann"))
+  (:unix "libdoublefann.so")
+  (:default "libdoublefann"))
 
 (cl:defun load-fann ()
   (cffi:use-foreign-library libfann))
