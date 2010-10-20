@@ -68,26 +68,49 @@
 
 
 (defmacro define-nn-accessor (name)
-  (let ((internal-get (intern (format nil "FANN-GET-~A" name)))
-	(internal-set (intern (format nil "FANN-SET-~S" name)))
+  `(progn
+     (define-nn-get-accessor ,name)
+     (define-nn-set-accessor ,name)))
+
+(defmacro define-nn-get-accessor (name)
+  (let ((internal-get (intern (format nil "FANN-GET-~A" name))))
+    (with-gensyms (nn-var rest)
+      `(defun ,name (,nn-var &rest ,rest)
+	 (apply (function ,internal-get) (%pointer ,nn-var) ,rest)))))
+
+(defmacro define-nn-set-accessor (name)
+  (let ((internal-set (intern (format nil "FANN-SET-~S" name)))
 	(generated-set (intern (format nil "%~A" name))))
     (with-gensyms (nn-var rest value)
       `(progn 
-	 (defun ,name (,nn-var &rest ,rest)
-	   (apply (function ,internal-get) (%pointer ,nn-var) ,rest))
 	 (defun ,generated-set (,nn-var ,value &rest ,rest)
 	   (apply (function ,internal-set) (%pointer ,nn-var) ,value ,rest)
 	   ,value)
 	 (defsetf ,name ,generated-set)))))
 
+;;; write-only accessors
+(define-nn-set-accessor activation-function-hidden)
+(define-nn-set-accessor activation-function-output)
+(define-nn-set-accessor activation-function-layer)
+
+(define-nn-set-accessor activation-steepness-hidden)
+(define-nn-set-accessor activation-steepness-output)
+(define-nn-set-accessor activation-steepness-layer)
+
+
+;;; read/write accessors
 (define-nn-accessor training-algorithm)
 (define-nn-accessor learning-rate) 
 (define-nn-accessor learning-momentum) 
+
 (define-nn-accessor train-error-function) 
 (define-nn-accessor train-stop-function) 
+
 (define-nn-accessor bit-fail-limit) 
+
 (define-nn-accessor quickprop-decay) 
 (define-nn-accessor quickprop-mu) 
+
 (define-nn-accessor rprop-increase-factor) 
 (define-nn-accessor rprop-decrease-factor) 
 (define-nn-accessor rprop-delta-min) 

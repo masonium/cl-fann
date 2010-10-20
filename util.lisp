@@ -4,7 +4,9 @@
 (in-package :fann)
 
 (defun map-nth-list (fn n list &rest more-lists)
-  "Similar to MAPLIST, but uses every N'th CDR, rather than CDR. (map-nth-list #'identity '(1 2 3 4 5)) => '((1 2 3 4 5) (3 4 5) (5)))"
+  "Similar to MAPLIST, but uses every N'th CDR, rather than
+CDR. (map-nth-list #'identity 2 '(1 2 3 4 5)) => '((1 2 3 4 5) (3 4
+5) (5)))"
   (labels ((aux (acc list rest)
 	     (if (null list)
 		 (nreverse acc)
