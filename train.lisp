@@ -15,24 +15,43 @@
     (print-unreadable-object (object stream :type t :identity t)
       (format stream "data")))
   object)
-			   
+
+;;;; Construction
 (defun %make-train-data (pointer)
   "Create a training data from a raw pointer"
   (let* ((train-data (make-instance 'train-data 
-			    :raw-pointer pointer
-			    :num-inputs (fann-num-input-train-data pointer)
-			    :num-outputs (fann-num-output-train-data pointer)
-			    :length (fann-length-train-data pointer))))
-	   
+				    :raw-pointer pointer
+				    :num-inputs (fann-num-input-train-data pointer)
+				    :num-outputs (fann-num-output-train-data pointer)
+				    :length (fann-length-train-data pointer))))
+    
     (tg:finalize train-data
 		 #'(lambda () (fannint:fann-destroy-train pointer)))
     train-data))
+
+(defun copy-train-data (data)
+  "Make an exact copy of the training set"
+  (%make-train-data (fann-internal:fann-duplicate-train-data (%pointer data))))
+
+(defun merge-train-data (data1 data2)
+  "Merge DATA1 and DATA2 into a newly-allocated data structure"
+  (%make-train-data (fann-internal:fann-merge-train-data 
+		     (%pointer data1) (%pointer data2))))
+
+(defun subset-train-data (data &optional (pos 0) (length (length-train-data data)))
+  "Return a subset of the training data, starting at POS"
+  (let ((len (min (- (length-train-data data) pos) length)))
+    (%make-train-data (fann-internal:fann-subset-train-data data pos len))))
 
 (defun read-train-data-from-file (pathname)
   "Create a training set with data loaded from PATHNAME"
   (cffi:with-foreign-string (data-filename (namestring pathname))
     (%make-train-data 
      (fann-read-train-from-file data-filename))))
+
+(defun length-train-data (data)
+  "Return the number of examples in DATA"
+  (fann-internal:fann-length-train-data (%pointer data )))
 
 (defun format-train-data (stream inputs outputs)
   "Write a training set to STREAM in the format that FANN can
@@ -58,7 +77,8 @@ functions stops once the shorter one runs out."
        ((and input output) #'fann-scale-train-data pointer)
        (input #'fann-scale-input-train-data)
        (output #'fann-scale-output-train-data)
-       (t #'identity))
+       (t #'(lambda (x y)
+	      (declare (ignore x y)) nil)))
      new-min new-max)))
 
 (defun shuffle-train-data (train-data)
@@ -67,11 +87,46 @@ functions stops once the shorter one runs out."
 
 (defun train (nn input desired-output)
   "Train NN on a single (INPUT, DESIRED-OUTPUT) data pair"
-  (with-sequence-as-foreign-array (in input 'fann-internal:fann-type out desired-output 'fann-internal:fann-type)
+  (with-sequence-as-foreign-array (in input 'fann-internal:fann-type 
+				      out desired-output 'fann-internal:fann-type)
     (fann-train (%pointer nn) in out)))
 
+(defun test (nn input desired-output)
+  "Test NN on a single data pair, updating the internal mse"
+  (with-sequence-as-foreign-array (in input 'fann-internal:fann-type
+				      out desired-output 'fann-internal:fann-type)
+    (fann-test (%poitner nn) in out)))
+
 (defun train-on-data (nn data max-epochs epochs-between-reports desired-error)
-  (fann-internal:fann-train-on-data (%pointer nn) (%pointer data) 
-				    max-epochs epochs-between-reports desired-error))
+  "Train NN on the DATA. DATA can be either a PATHNAME to a file in
+the correct data format or a pre-loaded TRAIN-DATA dataset"
+  (etypecase data
+    (train-data
+     (fann-internal:fann-train-on-data (%pointer nn) (%pointer data) 
+				       max-epochs epochs-between-reports 
+				       desired-error))
+    ((or string pathname)
+     (cffi:with-foreign-string (data-filename (namestring data))
+       (fann-internal:fann-train-on-file (%pointer nn) data-filename
+					 max-epochs epochs-between-reports
+					 desired-error)))))
+
+(defun train-epoch (nn data)
+  "Train NN for a single epoch on DATA. Returns the MSE as calculated before or during training, rather than after training is complete."
+  (fann-internal:fann-train-epoch (%pointer nn) (%pointer data)))
+
+(defun test-on-data (nn data)
+  "Test NN on DATA, updating and returning the MSE"
+  (fann-internal:fann-test-data (%pointer nn) (%pointer data)))
+
+(defun init-weights (nn data)
+  (fann-internal:fann-init-weights (%pointer nn) (%pointer data)))
 
 ;;;; training parameters
+(defun mse (nn)
+  "Get the current MSE from training"
+  (fann-internal:fann-get-mse (%pointer nn)))
+
+(defun reset-mse (nn)
+  "Reset the current MSE"
+  (fann-internal:fann-reset-mse (%pointer nn)))

@@ -78,6 +78,11 @@
       `(defun ,name (,nn-var &rest ,rest)
 	 (apply (function ,internal-get) (%pointer ,nn-var) ,rest)))))
 
+(defmacro define-nn-get-accessors (&rest names)
+  `(progn 
+     ,@(mapcar #'(lambda (name) `(define-nn-get-accessor ,name))
+	       names)))
+
 (defmacro define-nn-set-accessor (name)
   (let ((internal-set (intern (format nil "FANN-SET-~S" name)))
 	(generated-set (intern (format nil "%~A" name))))
@@ -97,6 +102,9 @@
 (define-nn-set-accessor activation-steepness-output)
 (define-nn-set-accessor activation-steepness-layer)
 
+
+;;; read-only accessors
+(define-nn-get-accessors num-input num-output total-neurons total-connections)
 
 ;;; read/write accessors
 (define-nn-accessor training-algorithm)
