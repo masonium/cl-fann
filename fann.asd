@@ -14,5 +14,6 @@
    (:file "package")
    (:file "util")
    (:file "fann")
-   (:file "train"))
+   (:file "train")
+   (:file "cascade"))
   :serial t)

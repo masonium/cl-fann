@@ -237,7 +237,8 @@
            "E-NO-ERROR"
            "FANN-ERRNO-ENUM"
            "FANN-TYPE"
-	   "LOAD-FANN"))
+	   "LOAD-FANN"
+	   "CLOSE-FANN"))
 
 (cl:in-package :fann-internal)
 

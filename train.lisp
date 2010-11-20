@@ -56,16 +56,17 @@
 (defun format-train-data (stream inputs outputs)
   "Write a training set to STREAM in the format that FANN can
 load. INPUTS is a list of lists, with each constituent list an input
-vector. If the inputs are dnimension one, the INPUTS can simply be a
+vector. If the inputs are of dimension one, the INPUTS can simply be a
 list of numbers, rather than a list of singletons. OUTPUTS is
 similarly formatted. If INPUTS and OUTPUTS are of different sizes, the
 functions stops once the shorter one runs out."
-
-  (let ((N (length inputs)))
+  (let ((N (min (length inputs) (length outputs))))
     (format stream "~A~%" N)
     (mapc 
      #'(lambda (in out)
-	 (format stream "~{~A~^ ~}~%~{~A~^ ~}~%" in out))
+	 (format stream "~{~A~^ ~}~%~{~A~^ ~}~%" 
+		 (if (listp in) in (list in)) 
+		 (if (listp out) out (list out))))
      inputs outputs)))
 
 (defun scale-train-data (train-data new-min new-max 
@@ -95,7 +96,7 @@ functions stops once the shorter one runs out."
   "Test NN on a single data pair, updating the internal mse"
   (with-sequence-as-foreign-array (in input 'fann-internal:fann-type
 				      out desired-output 'fann-internal:fann-type)
-    (fann-test (%poitner nn) in out)))
+    (fann-test (%pointer nn) in out)))
 
 (defun train-on-data (nn data max-epochs epochs-between-reports desired-error)
   "Train NN on the DATA. DATA can be either a PATHNAME to a file in
@@ -112,7 +113,8 @@ the correct data format or a pre-loaded TRAIN-DATA dataset"
 					 desired-error)))))
 
 (defun train-epoch (nn data)
-  "Train NN for a single epoch on DATA. Returns the MSE as calculated before or during training, rather than after training is complete."
+  "Train NN for a single epoch on DATA. Returns the MSE as calculated before or 
+during training, rather than after training is complete."
   (fann-internal:fann-train-epoch (%pointer nn) (%pointer data)))
 
 (defun test-on-data (nn data)

@@ -72,7 +72,13 @@
      (define-nn-get-accessor ,name)
      (define-nn-set-accessor ,name)))
 
+(defmacro define-nn-accessors (&rest names)
+  `(progn
+     (define-nn-get-accessors ,@names)
+     (define-nn-set-accessors ,@names)))
+
 (defmacro define-nn-get-accessor (name)
+  "Define the function for accessing a specific parameter of the neural network"
   (let ((internal-get (intern (format nil "FANN-GET-~A" name))))
     (with-gensyms (nn-var rest)
       `(defun ,name (,nn-var &rest ,rest)
@@ -84,6 +90,7 @@
 	       names)))
 
 (defmacro define-nn-set-accessor (name)
+  "Define a setf macro for setting values for parameters of the neural network"
   (let ((internal-set (intern (format nil "FANN-SET-~S" name)))
 	(generated-set (intern (format nil "%~A" name))))
     (with-gensyms (nn-var rest value)
@@ -92,6 +99,11 @@
 	   (apply (function ,internal-set) (%pointer ,nn-var) ,value ,rest)
 	   ,value)
 	 (defsetf ,name ,generated-set)))))
+
+(defmacro define-nn-set-accessors (&rest names)
+  `(progn ,@(mapcar #'(lambda (name)
+			`(define-nn-set-accessor ,name))
+		    names)))
 
 ;;; write-only accessors
 (define-nn-set-accessor activation-function-hidden)
