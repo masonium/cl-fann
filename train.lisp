@@ -11,9 +11,9 @@
    (length :initarg :length)))
 
 (defmethod print-object ((object train-data) stream)
-  (with-slots (num-inputs num-outputs) object
+  (with-slots (num-inputs num-outputs length) object
     (print-unreadable-object (object stream :type t :identity t)
-      (format stream "data")))
+      (format stream "~d, ~d, ~d" num-inputs num-outputs length)))
   object)
 
 ;;;; Construction
@@ -67,10 +67,12 @@ functions stops once the shorter one runs out."
 		 ((vectorp data) (coerce data 'list))
 		 ((numberp data) (list data))
 		 (t (error "Each input must be a number or a sequence of numbers")))))
-      (format stream "~A~%" N)
+      (format stream "~d ~d ~d~%" N 
+	      (length (convert-data (elt inputs 0)))	      
+	      (length (convert-data (elt outputs 0))))
       (map nil
 	   #'(lambda (in out)
-	       (format stream "~{~A~^ ~}~%~{~A~^ ~}~%" 
+	       (format stream "~{~5$~^ ~}~%~{~5$~^ ~}~%" 
 		       (convert-data in) 
 		       (convert-data out)))
 	   inputs
