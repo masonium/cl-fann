@@ -104,12 +104,14 @@ functions stops once the shorter one runs out."
 
 (defun train (nn input desired-output)
   "Train NN on a single (INPUT, DESIRED-OUTPUT) data pair"
+  (check-raw-dimensions nn (length input) (length desired-output))
   (with-sequence-as-foreign-array (in input 'fann-internal:fann-type 
 				      out desired-output 'fann-internal:fann-type)
     (fann-train (%pointer nn) in out)))
 
 (defun test (nn input desired-output)
   "Test NN on a single data pair, updating the internal mse"
+  (check-raw-dimensions nn (length input) (length desired-output))
   (with-sequence-as-foreign-array (in input 'fann-internal:fann-type
 				      out desired-output 'fann-internal:fann-type)
     (fann-test (%pointer nn) in out)))
@@ -119,7 +121,7 @@ functions stops once the shorter one runs out."
 the correct data format or a pre-loaded TRAIN-DATA dataset"
   (etypecase data
     (train-data
-     (check-dimensions nn data)
+     (check-data-dimensions nn data)
      (fann-internal:fann-train-on-data (%pointer nn) (%pointer data) 
 				       max-epochs epochs-between-reports 
 				       desired-error))
@@ -130,25 +132,46 @@ the correct data format or a pre-loaded TRAIN-DATA dataset"
 					 desired-error)))))
 
 (defun train-epoch (nn data)
-  "Train NN for a single epoch on DATA. Returns the MSE as calculated before or 
-during training, rather than after training is complete."
+  "Train NN for a single epoch on DATA. Returns the MSE as calculated
+before or during training, rather than after training is
+complete. DATA can be a pathname or a TRAIN-DATA object."
+  (let ((loaded-dat (ensure-loaded-data data))))
   (fann-internal:fann-train-epoch (%pointer nn) (%pointer data)))
 
 (defun test-on-data (nn data)
-  "Test NN on DATA, updating and returning the MSE"
-  (check-dimensions nn data)
-  (fann-internal:fann-test-data (%pointer nn) (%pointer data)))
+  "Test NN on DATA, updating and returning the MSE. DATA can either be
+a pathname or an already-loaded TRAIN-DATA object."
+  (let ((loaded-data (ensure-loaded-data data)))
+    (check-data-dimensions nn loaded-data)
+    (fann-internal:fann-test-data (%pointer nn) (%pointer loaded-data))))
+
+(defun ensure-loaded-data (data)
+  "If DATA is a TRAIN-DATA object, this function just returns it. If
+  it is a string or pathname, it loads the data from file into a
+  TRAIN-DATA object and returns it."
+  (etypecase data
+    (train-data data)
+    ((or string pathname)
+     (read-train-data-from-file data))))
 
 (defun init-weights (nn data)
   (fann-internal:fann-init-weights (%pointer nn) (%pointer data)))
 
-(defun check-dimensions (nn data)
+(defun check-data-dimensions (nn data)
   (when (not (= (num-input nn) (num-inputs-train-data data)))
     (error "Neural network and training data do not have same input dimension (~d vs. ~d)"
 	   (num-input nn) (num-inputs-train-data data)))
   (when (not (= (num-output nn) (num-outputs-train-data data)))
     (error "Neural network and training data do not have same output dimension (~d vs. ~d"
 	   (num-output nn) (num-outputs-train-data data))))
+
+(defun check-raw-dimensions (nn in out)
+  (when (not (= (num-input nn) in))
+    (error "Neural network and datum do not have same input dimension (~d vs. ~d)"
+	   (num-input nn) in))
+  (when (not (= (num-output nn) out))
+    (error "Neural network and datum do not have same output dimension (~d vs. ~d)"
+	   (num-output nn) out)))
 
 ;;;; training parameters
 (defun mse (nn)
