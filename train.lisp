@@ -29,6 +29,17 @@
 		 #'(lambda () (fannint:fann-destroy-train pointer)))
     train-data))
 
+;;;; Accessors
+(defun num-inputs-train-data (data)
+  (slot-value data 'num-inputs))
+
+(defun num-outputs-train-data (data)
+  (slot-value data 'num-outputs))
+
+(defun length-train-data (data)
+  (slot-value data 'length))
+
+;;;; Modifiers
 (defun copy-train-data (data)
   "Make an exact copy of the training set"
   (%make-train-data (fann-internal:fann-duplicate-train-data (%pointer data))))
@@ -41,17 +52,13 @@
 (defun subset-train-data (data &optional (pos 0) (length (length-train-data data)))
   "Return a subset of the training data, starting at POS"
   (let ((len (min (- (length-train-data data) pos) length)))
-    (%make-train-data (fann-internal:fann-subset-train-data data pos len))))
+    (%make-train-data (fann-internal:fann-subset-train-data (%pointer data) pos len))))
 
 (defun read-train-data-from-file (pathname)
   "Create a training set with data loaded from PATHNAME"
   (cffi:with-foreign-string (data-filename (namestring pathname))
     (%make-train-data 
      (fann-read-train-from-file data-filename))))
-
-(defun length-train-data (data)
-  "Return the number of examples in DATA"
-  (fann-internal:fann-length-train-data (%pointer data )))
 
 (defun format-train-data (stream inputs outputs)
   "Write a training set to STREAM in the format that FANN can
@@ -112,6 +119,7 @@ functions stops once the shorter one runs out."
 the correct data format or a pre-loaded TRAIN-DATA dataset"
   (etypecase data
     (train-data
+     (check-dimensions nn data)
      (fann-internal:fann-train-on-data (%pointer nn) (%pointer data) 
 				       max-epochs epochs-between-reports 
 				       desired-error))
@@ -128,10 +136,19 @@ during training, rather than after training is complete."
 
 (defun test-on-data (nn data)
   "Test NN on DATA, updating and returning the MSE"
+  (check-dimensions nn data)
   (fann-internal:fann-test-data (%pointer nn) (%pointer data)))
 
 (defun init-weights (nn data)
   (fann-internal:fann-init-weights (%pointer nn) (%pointer data)))
+
+(defun check-dimensions (nn data)
+  (when (not (= (num-input nn) (num-inputs-train-data data)))
+    (error "Neural network and training data do not have same input dimension (~d vs. ~d)"
+	   (num-input nn) (num-inputs-train-data data)))
+  (when (not (= (num-output nn) (num-outputs-train-data data)))
+    (error "Neural network and training data do not have same output dimension (~d vs. ~d"
+	   (num-output nn) (num-outputs-train-data data))))
 
 ;;;; training parameters
 (defun mse (nn)

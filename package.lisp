@@ -35,6 +35,8 @@
    length-train-data format-train-data scale-train-data shuffle-train-data
    train test train-on-data train-epoch test-on-data init-weights mse reset-mse
 
+   num-inputs-train-data num-outputs-train-data length-train-data
+
    ;; cascade training
    cascade-train-on-data cascade-train-on-file cascade-train
    
