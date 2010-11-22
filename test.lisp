@@ -14,7 +14,7 @@
 
 (defun xor2-test ()
   (let ((nn (create-neural-network '(2 1 1 1) :type :shortcut))
-	(data (read-train-data-from-file "/home/mason/workspace/fann/hello.txt")))
+	(data (read-train-data-from-file "/home/mason/workspace/fann/xor.net")))
     (setf (activation-function-hidden nn) :sigmoid-symmetric
 	  (activation-function-output nn) :sigmoid-symmetric)
     (fann:cascade-train-on-data nn data 200 1.0e-6)

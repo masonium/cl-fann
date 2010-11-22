@@ -55,19 +55,26 @@
 
 (defun format-train-data (stream inputs outputs)
   "Write a training set to STREAM in the format that FANN can
-load. INPUTS is a list of lists, with each constituent list an input
+load. INPUTS is a sequence of sequences, with each constituent sequence an input
 vector. If the inputs are of dimension one, the INPUTS can simply be a
-list of numbers, rather than a list of singletons. OUTPUTS is
+sequence of numbers, rather than a list of singletons. OUTPUTS is
 similarly formatted. If INPUTS and OUTPUTS are of different sizes, the
 functions stops once the shorter one runs out."
   (let ((N (min (length inputs) (length outputs))))
-    (format stream "~A~%" N)
-    (mapc 
-     #'(lambda (in out)
-	 (format stream "~{~A~^ ~}~%~{~A~^ ~}~%" 
-		 (if (listp in) in (list in)) 
-		 (if (listp out) out (list out))))
-     inputs outputs)))
+    (labels ((convert-data (data)
+	       (cond
+		 ((listp data) data)
+		 ((vectorp data) (coerce data 'list))
+		 ((numberp data) (list data))
+		 (t (error "Each input must be a number or a sequence of numbers")))))
+      (format stream "~A~%" N)
+      (map nil
+	   #'(lambda (in out)
+	       (format stream "~{~A~^ ~}~%~{~A~^ ~}~%" 
+		       (convert-data in) 
+		       (convert-data out)))
+	   inputs
+	   outputs))))
 
 (defun scale-train-data (train-data new-min new-max 
 			 &optional (input t) (output t))
