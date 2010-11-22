@@ -31,16 +31,16 @@
       (cffi:foreign-alloc type :initial-element seq)))
 
 (defmacro with-sequence-as-foreign-array ((&rest var-sequence-type-triples) &body body)
-  `(let ,(map-nth-list #'(lambda (vst-rest)
-			   (let ((var (first vst-rest))
-				 (sequence (second vst-rest))
-				 (type (third vst-rest)))
-			     `(,var (sequence->foreign-array ,sequence ,type))))
-		       3 var-sequence-type-triples)
+  `(let ,(%map-nth-list #'(lambda (vst-rest)
+			    (let ((var (first vst-rest))
+				  (sequence (second vst-rest))
+				  (type (third vst-rest)))
+			      `(,var (sequence->foreign-array ,sequence ,type))))
+			3 var-sequence-type-triples)
      (unwind-protect 
 	  (progn ,@body)
-       ,@(map-nth-list #'(lambda (v-rest) `(cffi:foreign-free ,(first v-rest)))
-		       3 var-sequence-type-triples))))
+       ,@(%map-nth-list #'(lambda (v-rest) `(cffi:foreign-free ,(first v-rest)))
+			3 var-sequence-type-triples))))
 
 (define-condition neural-network-error (error)
   ((message :initarg :message)))
@@ -106,35 +106,19 @@
 		    names)))
 
 ;;; write-only accessors
-(define-nn-set-accessor activation-function-hidden)
-(define-nn-set-accessor activation-function-output)
-(define-nn-set-accessor activation-function-layer)
-
-(define-nn-set-accessor activation-steepness-hidden)
-(define-nn-set-accessor activation-steepness-output)
-(define-nn-set-accessor activation-steepness-layer)
-
+(define-nn-set-accessors activation-function-hidden activation-function-output
+  activation-function-layer activation-steepness-hidden
+  activation-steepness-output activation-steepness-layer)
 
 ;;; read-only accessors
 (define-nn-get-accessors num-input num-output total-neurons total-connections)
 
 ;;; read/write accessors
-(define-nn-accessor training-algorithm)
-(define-nn-accessor learning-rate) 
-(define-nn-accessor learning-momentum) 
-
-(define-nn-accessor train-error-function) 
-(define-nn-accessor train-stop-function) 
-
-(define-nn-accessor bit-fail-limit) 
-
-(define-nn-accessor quickprop-decay) 
-(define-nn-accessor quickprop-mu) 
-
-(define-nn-accessor rprop-increase-factor) 
-(define-nn-accessor rprop-decrease-factor) 
-(define-nn-accessor rprop-delta-min) 
-(define-nn-accessor rprop-delta-max)
+(define-nn-accessors training-algorithm learning-rate learning-momentum 
+  train-error-function train-stop-function 
+  bit-fail-limit 
+  quickprop-decay quickprop-mu 
+  rprop-increase-factor rprop-decrease-factor rprop-delta-min rprop-delta-max)
 
 (defun %pointer (nn)
   (slot-value nn 'raw-pointer))
@@ -143,13 +127,13 @@
 ;;;; I/O
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun load-from-file (pathname)
+(defun load-ann-from-file (pathname)
   "Load a neural network previously saved at PATHNAME"
   (cffi:with-foreign-string (config-filename (namestring pathname))
     (%make-neural-network
      (fann-create-from-file config-filename))))
 
-(defun save-to-file (nn pathname &optional fixed-point)
+(defun save-ann-to-file (nn pathname &optional fixed-point)
   "Save the neural network NN to a file specified by PATHNAME."
   (cffi:with-foreign-string (config-filename (namestring pathname))
     (if fixed-point
