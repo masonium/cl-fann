@@ -60,7 +60,8 @@
     (%make-train-data 
      (fann-read-train-from-file data-filename))))
 
-(defun format-train-data (stream inputs outputs)
+(defun format-train-data (stream inputs outputs 
+			  &key (input-fn #'identity) (output-fn #'identity))
   "Write a training set to STREAM in the format that FANN can
 load. INPUTS is a sequence of sequences, with each constituent sequence an input
 vector. If the inputs are of dimension one, the INPUTS can simply be a
@@ -75,13 +76,13 @@ functions stops once the shorter one runs out."
 		 ((numberp data) (list data))
 		 (t (error "Each input must be a number or a sequence of numbers")))))
       (format stream "~d ~d ~d~%" N 
-	      (length (convert-data (elt inputs 0)))	      
-	      (length (convert-data (elt outputs 0))))
+	      (length (convert-data (funcall input-fn (elt inputs 0))))
+	      (length (convert-data (funcall output-fn (elt outputs 0)))))
       (map nil
 	   #'(lambda (in out)
 	       (format stream "~{~5$~^ ~}~%~{~5$~^ ~}~%" 
-		       (convert-data in) 
-		       (convert-data out)))
+		       (convert-data (funcall input-fn in)) 
+		       (convert-data (funcall output-fn out))))
 	   inputs
 	   outputs))))
 
@@ -91,12 +92,12 @@ functions stops once the shorter one runs out."
   (let ((pointer (%pointer train-data)))
     (funcall 
      (cond 
-       ((and input output) #'fann-scale-train-data pointer)
+       ((and input output) #'fann-scale-train-data)
        (input #'fann-scale-input-train-data)
        (output #'fann-scale-output-train-data)
        (t #'(lambda (x y)
 	      (declare (ignore x y)) nil)))
-     new-min new-max)))
+     pointer (coerce  new-min 'double-float) (coerce new-max 'double-float))))
 
 (defun shuffle-train-data (train-data)
   "Shuffle the training data to be in a random order"
