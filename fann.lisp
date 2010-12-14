@@ -96,7 +96,7 @@
     (with-gensyms (nn-var rest value)
       `(progn 
 	 (defun ,generated-set (,nn-var ,value &rest ,rest)
-	   (apply (function ,internal-set) (%pointer ,nn-var) ,value ,rest)
+	   (apply (function ,internal-set) (%pointer ,nn-var) (append ,rest (list ,value)))
 	   ,value)
 	 (defsetf ,name ,generated-set)))))
 
@@ -107,8 +107,8 @@
 
 ;;; write-only accessors
 (define-nn-set-accessors activation-function-hidden activation-function-output
-  activation-function-layer activation-steepness-hidden
-  activation-steepness-output activation-steepness-layer)
+  activation-steepness-hidden activation-steepness-output
+  activation-function-layer activation-steepness-layer)
 
 ;;; read-only accessors
 (define-nn-get-accessors num-input num-output total-neurons total-connections)
