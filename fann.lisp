@@ -1,5 +1,4 @@
 ;;;; libfann
-
 (in-package :fann)
 
 (defclass neural-network ()
@@ -148,4 +147,5 @@
 ;;;; Training
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun randomize-weights (nn min-weight max-weight)
+  "Randomize the weights of NN before training"
   (fann-randomize-weights (%pointer nn) min-weight max-weight))

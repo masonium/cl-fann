@@ -50,3 +50,7 @@
    cascade-num-candidates cascade-activation-functions-count
    cascade-activation-steepnesses-count 
    ))
+
+(defpackage :fann-examples
+  (:use :common-lisp :fann :alexandria :bind)
+  (:export xor-example linear-regression-example))

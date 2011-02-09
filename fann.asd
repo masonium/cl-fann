@@ -7,13 +7,14 @@
   :description "CFFI wrapper and lispy interface for libfann, an artificial neural network library"
   :author "Mason Smith <masonium@gmail.com>"
   :maintainer "Mason Smith <masonium@gmail.com>"
-  :license "WTFPL"
-  :depends-on (:cffi :trivial-garbage :alexandria)
+  :license "MIT"
+  :depends-on (:cffi :trivial-garbage :alexandria :metabang-bind)
   :components
   ((:file "fann-internal")
    (:file "package")
    (:file "util")
    (:file "fann")
    (:file "train")
-   (:file "cascade"))
+   (:file "cascade")
+   (:file "examples"))
   :serial t)
