@@ -52,5 +52,5 @@
    ))
 
 (defpackage :fann-examples
-  (:use :common-lisp :fann :alexandria :bind)
+  (:use :common-lisp :fann :alexandria)
   (:export xor-example linear-regression-example))
